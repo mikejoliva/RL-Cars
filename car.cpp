@@ -57,6 +57,7 @@ void Car::reset()
 	sprite.setColor(current);
 
 	laps.waypointsPassed.clear();
+	laps.lap = 0;
 
 	// Bring the car back to life
 	dead = false;
@@ -132,6 +133,11 @@ Car::Car(const Car& c) :
 	texture(c.texture),
 	sprite(c.sprite)
 { /* Empty */ }
+
+Car::~Car()
+{
+
+}
 
 int Car::loadTexture()
 {
@@ -236,6 +242,17 @@ void Car::checkStuck()
 	if (withinToleranceOfSprite(previousPos, .1f))
 		setDead();
 
+	// Check the car is making progress
+	if (moveCount >= 10000)
+	{
+		moveCount = 0;
+
+		if (getScore() == lastScore)
+			setDead();
+		else
+			lastScore = getScore();
+	}
+		
 	previousPos = sprite.getPosition();
 }
 
@@ -373,7 +390,7 @@ void Car::move(EDirection dir)
 	updateRect();
 
 	if (dir == EDirection::FORWARD) {
-		const float angleRADS = (PI / 180) * (sprite.getRotation() + trackInfo.rotation);
+		const float angleRADS = (PI / 180) * (sprite.getRotation() + 270);
 		//Set x and y
 		const float x = MOVE_SPEED * cos(angleRADS);
 		const float y = MOVE_SPEED * sin(angleRADS);
@@ -381,7 +398,7 @@ void Car::move(EDirection dir)
 		sprite.move({ x, y });
 	}
 	else if (dir == EDirection::BACKWARD) {
-		const float angleRADS = (PI / 180) * (sprite.getRotation() + trackInfo.rotation);
+		const float angleRADS = (PI / 180) * (sprite.getRotation() + 270);
 		//Set x and y
 		const float x = MOVE_SPEED * cos(angleRADS);
 		const float y = MOVE_SPEED * sin(angleRADS);
@@ -433,10 +450,7 @@ void Car::findMove()
 
 	move(m);
 
-	if (++moveCount >= 100)
-	{
+	if (++moveCount % 100 == 0)
 		checkStuck();
-		moveCount = 0;
-	}
 }
 

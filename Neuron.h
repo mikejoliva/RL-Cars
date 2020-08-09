@@ -9,8 +9,8 @@ private:
 	float bias;
 	float value;
 
-	std::vector<Neuron> next;
-	std::vector<Neuron> prev;
+	std::vector<Neuron*> next;
+	std::vector<Neuron*> prev;
 
 	std::vector<float> weights;
 
@@ -19,7 +19,7 @@ private:
 	Neuron() = delete;
 public:
 	Neuron(float);
-	Neuron(Neuron&);
+	Neuron(const Neuron&);
 	~Neuron();
 
 	void setNext(std::vector<Neuron*>&, std::vector<float>&);
@@ -32,6 +32,8 @@ public:
 	std::vector<float>& getWeights();
 	void setWeights(std::vector<float>&);
 
+	float getBias();
+	void setBias(float);
 	void updateBias(float);
 
 	void propagate();

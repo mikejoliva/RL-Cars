@@ -12,23 +12,6 @@
 class Car
 {
 private:
-	Car() = delete;
-
-	int loadTexture();
-	void borderCollision();
-	void findLines();
-	inline bool lineIntersection(sf::Vector2f&, sf::Vector2f&, sf::Vector2f&, sf::Vector2f&);
-	void advanceLap();
-	inline sf::Vertex findLine(TrackInfo::RoadRGB&, sf::Image&, std::function<sf::Vector2<int>(const sf::FloatRect&, const sf::Transform&, int)>);
-	inline int getLength(sf::Vertex&, sf::Vertex&);
-	void setDead();
-	inline bool validColour(const sf::Color&);
-	inline bool validColour(sf::Color&);
-	inline void updateRect();
-	void updatePoints();
-	void checkStuck();
-	inline bool withinTolerance(sf::Vector2f&, sf::Vector2f&, float tolerance);
-	inline bool withinToleranceOfSprite(sf::Vector2f&, float tolerance);
 
 	std::array<sf::Vertex[2], 5> lines;
 	sf::FloatRect previousBounds;
@@ -36,6 +19,7 @@ private:
 	sf::Vector2f previousPos;
 
 	size_t moveCount = 0;
+	unsigned int lastScore = 0;
 
 	std::vector<std::vector<sf::Vertex>> waypoints;
 	sf::Vector2f points[8];
@@ -56,6 +40,33 @@ private:
 	sf::Image& track;
 
 	Network* network;
+
+
+	void setDead();
+
+	int loadTexture();
+
+	void advanceLap();
+
+	void borderCollision();
+	void findLines();
+	inline bool lineIntersection(sf::Vector2f&, sf::Vector2f&, sf::Vector2f&, sf::Vector2f&);
+	inline sf::Vertex findLine(TrackInfo::RoadRGB&, sf::Image&, std::function<sf::Vector2<int>(const sf::FloatRect&, const sf::Transform&, int)>);
+	inline int getLength(sf::Vertex&, sf::Vertex&);
+
+	inline bool validColour(const sf::Color&);
+	inline bool validColour(sf::Color&);
+
+	inline void updateRect();
+	void updatePoints();
+	void checkStuck();
+
+	inline bool withinTolerance(sf::Vector2f&, sf::Vector2f&, float tolerance);
+	inline bool withinToleranceOfSprite(sf::Vector2f&, float tolerance);
+
+	void move(EDirection);
+
+	Car() = delete;
 public:
 	struct Laps
 	{
@@ -69,9 +80,6 @@ public:
 
 
 	std::array<int, 5> getLineLengths();
-
-	// TODO: Make private once debug is finished
-	void move(EDirection);
 
 	void findMove();
 
@@ -107,6 +115,9 @@ public:
 	);
 
 	Car(const Car& c);
+
+	~Car();
+
 };
 
 #endif

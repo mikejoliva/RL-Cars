@@ -12,7 +12,7 @@ Neuron::Neuron(float b) :
 	bias(b), value(0.f)
 { /* Empty */ }
 
-Neuron::Neuron(Neuron& n) :
+Neuron::Neuron(const Neuron& n) :
 	bias(n.bias),
 	value(n.value),
 	next(n.next),
@@ -23,24 +23,17 @@ Neuron::Neuron(Neuron& n) :
 
 Neuron::~Neuron()
 {
-	/*
-	for (int idx = 0; idx < prev.size(); ++idx)
-		if (prev[idx])
-			delete prev[idx];
-
-	for (int idx = 0; idx < next.size(); ++idx)
-		if (next[idx])
-			delete next[idx];
-			*/
+	prev.clear();
+	next.clear();
 }
 
-void Neuron::setNext(std::vector<Neuron>& v, std::vector<float>& w)
+void Neuron::setNext(std::vector<Neuron*>& v, std::vector<float>& w)
 {
 	next = v;
 	weights = w;
 }
 
-void Neuron::setPrev(std::vector<Neuron>& v)
+void Neuron::setPrev(std::vector<Neuron*>& v)
 {
 	prev = v;
 }
@@ -70,14 +63,24 @@ void Neuron::setWeights(std::vector<float>& w)
 	weights = w;
 }
 
-void Neuron::updateBias(float b)
+float Neuron::getBias()
+{
+	return bias;
+}
+
+void Neuron::setBias(float b)
 {
 	bias = b;
+}
+
+void Neuron::updateBias(float b)
+{
+	bias += b;
 }
 
 void Neuron::propagate()
 {
 	for (int idx = 0; idx < next.size(); ++idx)
-		next[idx].addValue(getValue() * weights[idx]);
+		next[idx]->addValue(getValue() * weights[idx]);
 }
 

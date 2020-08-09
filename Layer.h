@@ -16,6 +16,8 @@ private:
 	Layer() = delete;
 public:
 	Layer(unsigned int);
+	Layer(const Layer&);
+
 	~Layer();
 	
 	void setNext(Layer*);
@@ -27,7 +29,7 @@ public:
 	void flush();
 
 	Neuron* getNeuron(size_t);
-	std::vector<Neuron>& getNeurons();
+	std::vector<Neuron*>& getNeurons();
 	
 	size_t getSize();
 };

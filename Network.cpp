@@ -20,38 +20,23 @@ Network::Network(unsigned int hidden, unsigned int neurons)
 
 	// Link each of the layers forwards
 	for (size_t idx = 0; idx < layers.size() - 1;)
-		layers[idx].setNext(layers[++idx]);
-	
-	// We need to assign a weight to every connection within each neuron
-	// Seed with a real random value, if available
-	std::random_device dev;
-	std::uniform_real_distribution<float> dist(-5.f, 5.f);
-	std::mt19937 mt(dev());
+		layers[idx]->setNext(layers[++idx]);
 
-	// Link our nodes together
-	Layer current = layers[0];
-	while (current->getNext() != nullptr)
-	{
-		for (size_t idx = 0; idx < current->getSize(); ++idx)
-		{
-			std::vector<float> weights;
-			for (size_t inner = 0; inner < current->getNext()->getSize(); ++inner)
-				weights.push_back(dist(mt));
-			current->getNeuron(idx).setNext(current->getNext()->getNeurons(), weights);
-		}
-			
-		current = current->getNext();
-	}
-		
+	setupWeights();
+}
 
-
+Network::~Network()
+{
+	for (size_t idx = 0; idx < layers.size(); ++idx)
+		if (layers[idx])
+			delete layers[idx];
 }
 
 EDirection Network::predictMove(std::array<int, 5>& distances)
 {
 	// Input starting data into the input layer
 	for (size_t idx = 0; idx < layers[0]->getSize(); ++idx)
-		layers[0]->getNeuron(idx).setValue(distances.at(idx));
+		layers[0]->getNeuron(idx)->setValue(distances.at(idx));
 
 	// Remove existing values from the network
 	for (size_t idx = 1; idx < layers.size(); ++idx)
@@ -60,15 +45,15 @@ EDirection Network::predictMove(std::array<int, 5>& distances)
 	// Propagate forwards in the network
 	for (size_t outer = 0; outer < layers.size() - 1; ++outer)
 		for (size_t inner = 0; inner < layers[outer]->getSize(); ++inner)
-			layers[outer]->getNeuron(inner).propagate();
+			layers[outer]->getNeuron(inner)->propagate();
 	
 	// Find the move with the highest probability
 	float highest = -1000.f;
 	EDirection move = EDirection::STOP;
 	for (size_t idx = 0; idx < layers[layers.size() - 1]->getSize(); ++idx)
-		if (layers[layers.size() - 1]->getNeuron(idx).getValue() > highest)
+		if (layers[layers.size() - 1]->getNeuron(idx)->getValue() > highest)
 		{
-			highest = layers[layers.size() - 1]->getNeuron(idx).getValue();
+			highest = layers[layers.size() - 1]->getNeuron(idx)->getValue();
 			move = static_cast<EDirection>(idx);
 		}
 	
@@ -79,35 +64,63 @@ EDirection Network::predictMove(std::array<int, 5>& distances)
 
 void Network::mutate(std::vector<Layer*> l)
 {
-	// Set our layers to match that of another network
-	for (size_t idx = 0; idx < layers.size(); ++idx)
-	{
+
+	for (size_t idx = 0; idx < l.size(); ++idx)
+		delete layers[idx];
+
+	for (size_t idx = 0; idx < l.size(); ++idx)
 		layers[idx] = new Layer(*l[idx]);
-	}
 
-
-	//return; 
+	for (size_t idx = 0; idx < layers.size() - 1;)
+		layers[idx]->setNext(layers[++idx]);
 
 	// 'Nudge' our weights by a random value
 	std::random_device dev;
-	std::uniform_real_distribution<float> dist(-5.f, 5.f);
+	std::uniform_real_distribution<float> dist(-.5f, .5f);
 	std::mt19937 mt(dev());
+
+	
 
 	Layer* current = layers[0];
 	while (current->getNext() != nullptr)
 	{
 		for (size_t idx = 0; idx < current->getSize(); ++idx)
 		{
-			std::vector<float> weights = current->getNeuron(idx).getWeights();
-			for (float w : weights)
-				w += dist(mt);
-			current->getNeuron(idx).setWeights(weights);
+			std::vector<float> weights = current->getNeuron(idx)->getWeights();
+			for (size_t inner = 0; inner < current->getNext()->getSize(); ++inner)
+				weights[inner] += dist(mt);
+			current->getNeuron(idx)->setNext(current->getNext()->getNeurons(), weights);
+			current->getNeuron(idx)->updateBias(dist(mt) / 10.f);
 		}
 
 		current = current->getNext();
 	}
 
-	dump();
+	//dump();
+}
+
+void Network::setupWeights()
+{
+	// We need to assign a weight to every connection within each neuron
+	// Seed with a real random value, if available
+	std::random_device dev;
+	std::uniform_real_distribution<float> dist(-5.f, 5.f);
+	std::mt19937 mt(dev());
+
+	// Link our nodes together
+	Layer* current = layers[0];
+	while (current->getNext() != nullptr)
+	{
+		for (size_t idx = 0; idx < current->getSize(); ++idx)
+		{
+			std::vector<float> weights;
+			for (size_t inner = 0; inner < current->getNext()->getSize(); ++inner)
+				weights.push_back(dist(mt));
+			current->getNeuron(idx)->setNext(current->getNext()->getNeurons(), weights);
+		}
+
+		current = current->getNext();
+	}
 }
 
 std::vector<Layer*> Network::getLayers()
@@ -117,7 +130,7 @@ std::vector<Layer*> Network::getLayers()
 
 void Network::dump()
 {
-	std::cout << "Network dump: " << std::endl;
+	std::cout << std::endl << std::endl <<  "Network dump: " << std::endl;
 
 	int largest = 0;
 	for (size_t idx = 0; idx < layers.size(); ++idx)
@@ -132,7 +145,7 @@ void Network::dump()
 	{
 		for (size_t idx = 0; idx < layers.size(); ++idx)
 			if (count < layers[idx]->getSize())
-				std::cout << layers[idx]->getNeuron(count).getValue() << "\t";
+				std::cout << layers[idx]->getNeuron(count)->getValue() << "\t";
 		std::cout << std::endl;
 	}
 
@@ -143,7 +156,7 @@ void Network::dump()
 			if (count < layers[idx]->getSize())
 			{
 				std::cout << "{";
-				std::vector<float> weights = layers[idx]->getNeuron(count).getWeights();
+				std::vector<float> weights = layers[idx]->getNeuron(count)->getWeights();
 				for (size_t inner = 0; inner < weights.size(); ++inner)
 				{
 					std::cout << weights[inner];
@@ -155,4 +168,19 @@ void Network::dump()
 		std::cout << std::endl;
 	}
 
+	std::cout << "Reference dump: " << std::endl;
+	for (size_t idx = 0; idx < layers.size(); ++idx)
+		std::cout << "L " << idx << "(" << &layers[idx] << ")" << "\t";
+
+	std::cout << std::endl;
+
+	for (size_t count = 0; count <= largest; ++count)
+	{
+		for (size_t idx = 0; idx < layers.size(); ++idx)
+			if (count < layers[idx]->getSize())
+				std::cout << layers[idx]->getNeuron(count) << "\t";
+		std::cout << std::endl;
+	}
+
+	std::cout << std::endl << std::endl;
 }
