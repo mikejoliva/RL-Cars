@@ -32,8 +32,8 @@ private:
 
 	bool dead = false;
 
-	const float MOVE_SPEED = 0.5f;
-	const float ROTATE_SPEED = 1.f;
+	const float MOVE_SPEED = 1.3f;
+	const float ROTATE_SPEED = MOVE_SPEED * 1.5f;
 
 	// Store a copy of the track info and image
 	TrackInfo& trackInfo;
@@ -41,6 +41,9 @@ private:
 
 	Network* network;
 
+	sf::Clock clock;
+	sf::Time acc = sf::Time::Zero;
+	sf::Time ups = sf::seconds(1.f / 144.f);
 
 	void setDead();
 
@@ -78,10 +81,11 @@ public:
 	sf::Texture* texture = new sf::Texture();
 	sf::Sprite sprite;
 
-
 	std::array<int, 5> getLineLengths();
 
 	void findMove();
+
+	void run();
 
 	void reset();
 	void waypointCollision();
@@ -91,7 +95,7 @@ public:
 	Network* getNetwork() { return network; }
 
 	bool isDead() { return dead; }
-	std::array<sf::Vertex[2], 5> getLines() { return lines; }
+	std::array<sf::Vertex[2], 5>& getLines() { return lines; }
 
 	bool operator==(Car& rhs) { return id == rhs.id; }
 	bool operator==(const Car& rhs) const { return id == rhs.id; }

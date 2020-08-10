@@ -7,8 +7,6 @@
 
 #include <SFML/Graphics.hpp>
 
-#include <iostream>
-
 #include "Car.h"
 
 #define PI (float)3.14159
@@ -39,8 +37,6 @@ Car::Car(unsigned int id, TrackInfo& trackInfo, sf::Image& track, std::vector<st
 
 void Car::reset()
 {
-	std::cout << "Car {" << std::to_string(id) << "} has been reset" << std::endl;
-
 	sprite.setPosition(trackInfo.posX, trackInfo.posY);
 	sprite.setRotation(trackInfo.rotation);
 
@@ -114,9 +110,6 @@ void Car::waypointCollision()
 			break;
 		}
 	}
-
-	if (startSize < laps.waypointsPassed.size())
-		std::cout << "Car {" << std::to_string(id) << "} has passed waypoint: " << std::to_string(laps.waypointsPassed.size()) << " (lap: " << laps.lap << ")" << std::endl;
 }
 
 unsigned int Car::getScore()
@@ -197,8 +190,6 @@ void Car::setDead()
 	// Change it's state to dead
 	dead = true;
 
-	std::cout << "Car {" << std::to_string(id) << "} has crashed!" << std::endl;
-
 	sf::Color current = sprite.getColor();
 	current.a = 100;
 	sprite.setColor(current);
@@ -239,11 +230,11 @@ void Car::updatePoints()
 void Car::checkStuck()
 {
 	// This function combats cars spamming LEFT & RIGHT or FORWARDS & BACKWARDS
-	if (withinToleranceOfSprite(previousPos, .1f))
+	if (withinToleranceOfSprite(previousPos, MOVE_SPEED / 2.f))
 		setDead();
 
 	// Check the car is making progress
-	if (moveCount >= 10000)
+	if (moveCount >= 1000)
 	{
 		moveCount = 0;
 
@@ -373,8 +364,6 @@ void Car::advanceLap()
 			laps.waypointsPassed.clear();
 			++laps.lap;
 
-			std::cout << "Car {" << std::to_string(id) << "} has advanced to lap: " << laps.lap << std::endl;
-
 			return;
 		}
 	}
@@ -423,34 +412,20 @@ void Car::move(EDirection dir)
 void Car::findMove()
 {
 	std::array<int, 5> lines = getLineLengths();
-	EDirection m = network->predictMove(lines);
-
-	switch (m)
-	{
-	case EDirection::FORWARD:
-		//std::cout << "Car {" << std::to_string(id) << "} move: FORWARDS" << std::endl;
-		break;
-
-	case EDirection::BACKWARD:
-		//std::cout << "Car {" << std::to_string(id) << "} move: BACKWARDS" << std::endl;
-		break;
-
-	case EDirection::ROTATE_LEFT:
-		//std::cout << "Car {" << std::to_string(id) << "} move: LEFT" << std::endl;
-		break;
-
-	case EDirection::ROTATE_RIGHT:
-		//std::cout << "Car {" << std::to_string(id) << "} move: RIGHT" << std::endl;
-		break;
-
-	case EDirection::STOP:
-		std::cout << "Car {" << std::to_string(id) << "} move: STOP" << std::endl;
-		break;
-	}
-
-	move(m);
+	move(network->predictMove(lines));
 
 	if (++moveCount % 100 == 0)
 		checkStuck();
+}
+
+void Car::run()
+{
+	while (acc > ups)
+	{
+		acc -= ups;
+		if (!dead)
+			findMove();
+	}
+	acc += clock.restart();
 }
 

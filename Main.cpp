@@ -10,13 +10,12 @@
 #include "TrackInfo.h"
 #include "EDirection.h"
 #include "Car.h"
+#include "CarBatch.h"
 
 int main()
 {
 	// Create the main window
 	sf::RenderWindow window(sf::VideoMode(1024, 768), "ML-Cars");
-	// Limit the FPS as a lazy way to regulate the speed of the cars
-	window.setFramerateLimit(144);
 
 	// Setup the text writer
 	sf::Font font;
@@ -53,10 +52,32 @@ int main()
 			<< ")" << std::endl;
 
 	// Load our vehicle sprites
-	const int CAR_COUNT = 40;
+	const size_t CAR_THREAD_COUNT = 5;
+	const size_t CARS_PER_THREAD = 10;
 	std::vector<Car> cars;
-	for (int idx = 0; idx < CAR_COUNT; ++idx)
+	for (size_t idx = 0; idx < CAR_THREAD_COUNT * CARS_PER_THREAD; ++idx)
 		cars.push_back(Car(idx, trackInfo, trackImage, waypoints, 2, 5));
+
+	std::vector<std::thread> threads(CAR_THREAD_COUNT);
+
+	std::vector<CarBatch> batches(CAR_THREAD_COUNT);
+	for (size_t idx = 0; idx < CAR_THREAD_COUNT; ++idx)
+	{
+		std::vector<std::function<void()>> funcs(CARS_PER_THREAD);
+		for (size_t inner = 0; inner < CARS_PER_THREAD; ++inner)
+		{
+			funcs[inner] = std::function<void()>([&cars, idx, inner, CARS_PER_THREAD] {
+				cars[(CARS_PER_THREAD * idx) + inner].run();
+			});
+		}
+
+		batches[idx] = CarBatch(funcs);
+	}
+
+	for (size_t idx = 0; idx < CAR_THREAD_COUNT; ++idx)
+		threads[idx] = std::thread([&batches, idx] {
+			batches[idx].run();
+		});
 
 	std::cout << "Created " << cars.size() << " cars" << std::endl;
 
@@ -104,10 +125,11 @@ int main()
 			{
 				++alive;
 
-				car->findMove();
+#ifdef DRAW_LINES
 				std::array<sf::Vertex[2], 5> lines = car->getLines();
 				for (int idx = 0; idx < lines.size(); ++idx)
 					window.draw(lines[idx], 2, sf::Lines);
+#endif
 			}
 			window.draw(car->sprite);
 		}
@@ -118,7 +140,7 @@ int main()
 
 			if (bestScore == 0)
 			{
-				// All cars sucked! Generate new weights for all cars
+				std::cout << "All cars failed to score! Creating new weights..." << bestCar->getID() << std::endl;
 				for (std::vector<Car>::iterator car = cars.begin(); car != cars.end(); ++car)
 					car->getNetwork()->setupWeights();
 			}
@@ -147,23 +169,11 @@ int main()
 		text.setString(
 			"FPS: " + std::to_string((int)fps) + '\n' +
 			"Generation: " + std::to_string(generation) + '\n' +
-			"Alive: " + std::to_string(alive) + "/" + std::to_string(CAR_COUNT)
+			"Alive: " + std::to_string(alive) + "/" + std::to_string(CAR_THREAD_COUNT * CARS_PER_THREAD)
 		);
 
 		window.draw(text);
-
-		// Force reset ALL cars
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
-		{
-			std::vector<Layer*> bestLayers = bestCar->getNetwork()->getLayers();
-			for (std::vector<Car>::iterator car = cars.begin(); car != cars.end(); ++car)
-			{
-				if (*car != bestCar)
-					car->getNetwork()->mutate(bestLayers);
-				car->reset();
-			}
-		}
-			
+		
 		// Draw scene
 		window.display();
 	}
