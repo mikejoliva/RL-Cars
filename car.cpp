@@ -11,8 +11,8 @@
 
 #define PI (float)3.14159
 
-Car::Car(unsigned int id, TrackInfo& trackInfo, sf::Image& track, std::vector<std::vector<sf::Vertex>>& waypoints, unsigned int hidden, unsigned int neurons)
-	: id(id), trackInfo(trackInfo), track(track), waypoints(waypoints), network(new Network(hidden, neurons))
+Car::Car(unsigned int id, TrackInfo& trackInfo, sf::Image& track, std::vector<std::vector<sf::Vertex>>& waypoints, Network* network)
+	: id(id), trackInfo(trackInfo), track(track), waypoints(waypoints), network(network)
 {
 	sprite.setPosition(trackInfo.posX, trackInfo.posY);
 	sprite.setScale(trackInfo.scaleX, trackInfo.scaleY);
@@ -21,11 +21,14 @@ Car::Car(unsigned int id, TrackInfo& trackInfo, sf::Image& track, std::vector<st
 	// Let's set a texture for this car
 	assert(loadTexture() == EXIT_SUCCESS);
 
+	sprite.setOrigin(sf::Vector2f(sprite.getTexture()->getSize().x * 0.5f, sprite.getTexture()->getSize().y * 0.5f));
 	// Set the origin to the new centre
+	/*
 	sprite.setOrigin({
 			(sprite.getTexture()->getSize().x * sprite.getScale().x) * 2,
 			(sprite.getTexture()->getSize().y * sprite.getScale().y) * 2
 		});
+		*/
 
 	previousBounds = sprite.getLocalBounds();
 
@@ -40,7 +43,6 @@ void Car::reset()
 	sprite.setPosition(trackInfo.posX, trackInfo.posY);
 	sprite.setRotation(trackInfo.rotation);
 
-	//posHistory.flush();
 	previousPos = sprite.getPosition();
 
 	updateRect();
@@ -54,6 +56,8 @@ void Car::reset()
 
 	laps.waypointsPassed.clear();
 	laps.lap = 0;
+
+	moveCount = 0;
 
 	// Bring the car back to life
 	dead = false;
@@ -378,6 +382,7 @@ void Car::move(EDirection dir)
 
 	updateRect();
 
+	/*
 	if (dir == EDirection::FORWARD) {
 		const float angleRADS = (PI / 180) * (sprite.getRotation() + 270);
 		//Set x and y
@@ -400,6 +405,35 @@ void Car::move(EDirection dir)
 	else if (dir == EDirection::ROTATE_RIGHT) {
 		sprite.rotate(ROTATE_SPEED);
 	}
+	*/
+
+	if (dir == EDirection::FORWARD)
+	{
+		speed += MOVE_SPEED;
+		if (speed > MAX_SPEED)
+			speed = MAX_SPEED;
+	}
+	else if (dir == EDirection::BACKWARD)
+	{
+		speed -= MOVE_SPEED;
+		if (speed < -MAX_SPEED)
+			speed = -MAX_SPEED;
+	}
+	else if (dir == EDirection::ROTATE_LEFT)
+	{
+		sprite.rotate(-speed * ROTATE_SPEED_RATIO);
+	}
+	else if (dir == EDirection::ROTATE_RIGHT)
+	{
+		sprite.rotate(speed * ROTATE_SPEED_RATIO);
+	}
+		
+
+	if (speed < 0.1f && speed > -0.1f)
+		return;
+
+	const float angleRADS = (PI / 180) * (sprite.getRotation() + 270);
+	sprite.move({ speed * cos(angleRADS), speed * sin(angleRADS) });
 
 	// Check we haven't hit anything
 	updatePoints();

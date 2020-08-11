@@ -32,8 +32,10 @@ private:
 
 	bool dead = false;
 
-	const float MOVE_SPEED = 1.3f;
-	const float ROTATE_SPEED = MOVE_SPEED * 1.5f;
+	const float MOVE_SPEED = .3f;
+	const float ROTATE_SPEED_RATIO = 1.5f;
+	const float MAX_SPEED = MOVE_SPEED * 4.f;
+	float speed = 0.f;
 
 	// Store a copy of the track info and image
 	TrackInfo& trackInfo;
@@ -114,8 +116,7 @@ public:
 		TrackInfo&,
 		sf::Image&,
 		std::vector<std::vector<sf::Vertex>>&,
-		unsigned int,
-		unsigned int
+		Network*
 	);
 
 	Car(const Car& c);

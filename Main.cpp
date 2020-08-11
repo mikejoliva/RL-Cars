@@ -37,13 +37,13 @@ int main()
 	// Keep an image of the track for pixel calculation
 	sf::Image trackImage = trackTexture.copyToImage();
 
+	// Load config info for the track
 	TrackInfo trackInfo;
 	if (trackInfo.loadTrackInfo("./tracks/track2.txt") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 
 	// Find our waypoints
 	std::vector<std::vector<sf::Vertex>> waypoints = trackInfo.findWaypoints(trackImage);
-	
 	std::cout << "Generated " << waypoints.size() << " waypoints:" << std::endl;
 	for (size_t idx = 0; idx < waypoints.size(); ++idx)
 		std::cout << "\tWaypoint {" << std::to_string(idx) 
@@ -51,13 +51,27 @@ int main()
 			<< ") B(" << waypoints[idx].at(1).position.x << ", " << waypoints[idx].at(1).position.y
 			<< ")" << std::endl;
 
-	// Load our vehicle sprites
-	const size_t CAR_THREAD_COUNT = 5;
-	const size_t CARS_PER_THREAD = 10;
+
+	const size_t CAR_THREAD_COUNT = 3;
+	const size_t CARS_PER_THREAD = 30;
+
+	const int NETWORK_INPUT_COUNT = 5;
+	const int NETWORK_OUTPUT_COUNT = 4;
+	const int NETWORK_HIDDEN_COUNT = 2;
+	const int NETWORK_NEURON_COUNT = 5;
+
 	std::vector<Car> cars;
 	for (size_t idx = 0; idx < CAR_THREAD_COUNT * CARS_PER_THREAD; ++idx)
-		cars.push_back(Car(idx, trackInfo, trackImage, waypoints, 2, 5));
-
+	{
+		Network* network = new Network(
+			NETWORK_INPUT_COUNT,
+			NETWORK_OUTPUT_COUNT,
+			NETWORK_HIDDEN_COUNT,
+			NETWORK_NEURON_COUNT
+		);
+		cars.push_back(Car(idx, trackInfo, trackImage, waypoints, network));
+	}
+		
 	std::vector<std::thread> threads(CAR_THREAD_COUNT);
 
 	std::vector<CarBatch> batches(CAR_THREAD_COUNT);
@@ -91,6 +105,8 @@ int main()
 	unsigned int bestScore = 0;
 	unsigned int generation = 0;
 	unsigned int alive = 0;
+	unsigned int previousScore = 0;
+	unsigned int scoreStreak = 0;
 
 	while (window.isOpen())
 	{
@@ -100,7 +116,16 @@ int main()
 		{
 			// Close window: exit
 			if (event.type == sf::Event::Closed)
+			{
 				window.close();
+				
+				// Kill the threads
+				for (size_t idx = 0; idx < batches.size(); ++idx)
+					batches[idx].stop();
+				for (auto& t : threads)
+					t.join();
+			}
+			
 		}
 
 		// Clear screen
@@ -134,24 +159,31 @@ int main()
 			window.draw(car->sprite);
 		}
 
-		if (!alive)
+		if (alive == 0)
 		{
 			++generation;
 
-			if (bestScore == 0)
+			if (bestScore == 1)
 			{
-				std::cout << "All cars failed to score! Creating new weights..." << bestCar->getID() << std::endl;
+				std::cout << "All cars failed to score! Creating new weights..." << std::endl;
 				for (std::vector<Car>::iterator car = cars.begin(); car != cars.end(); ++car)
+				{
 					car->getNetwork()->setupWeights();
+					car->reset();
+				}
 			}
 			else
 			{
-				std::cout << "Best performing car was: " << bestCar->getID() << std::endl;
+				std::cout << "Best performing car was: " << bestCar->getID() << " (Score: " << bestScore  << ")" << std::endl;
+
+				previousScore == bestScore ? ++scoreStreak : scoreStreak = 0;
+				previousScore = bestScore;
+
 				std::vector<Layer*> bestLayers = bestCar->getNetwork()->getLayers();
 				for (std::vector<Car>::iterator car = cars.begin(); car != cars.end(); ++car)
 				{
 					if (*car != bestCar)
-						car->getNetwork()->mutate(bestLayers);
+						car->getNetwork()->mutate(bestLayers, .5f * (float)scoreStreak);
 					car->reset();
 				}
 			}

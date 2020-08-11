@@ -6,17 +6,17 @@
 
 #include "Network.h"
 
-Network::Network(unsigned int hidden, unsigned int neurons)
+Network::Network(unsigned int input, unsigned int output, unsigned int hidden, unsigned int neurons)
 {
 	// Create our neural network layers
 	// Input layer
-	layers.push_back(new Layer(5));
+	layers.push_back(new Layer(input));
 	// Hidden layers
 	for (size_t idx = 0; idx < hidden; ++idx)
 		layers.push_back(new Layer(neurons));
 
 	// Output layer
-	layers.push_back(new Layer(4));
+	layers.push_back(new Layer(output));
 
 	// Link each of the layers forwards
 	for (size_t idx = 0; idx < layers.size() - 1;)
@@ -62,7 +62,7 @@ EDirection Network::predictMove(std::array<int, 5>& distances)
 	return move;
 }
 
-void Network::mutate(std::vector<Layer*> l)
+void Network::mutate(std::vector<Layer*>& l, float range)
 {
 
 	for (size_t idx = 0; idx < l.size(); ++idx)
@@ -76,7 +76,7 @@ void Network::mutate(std::vector<Layer*> l)
 
 	// 'Nudge' our weights by a random value
 	std::random_device dev;
-	std::uniform_real_distribution<float> dist(-.5f, .5f);
+	std::uniform_real_distribution<float> dist(-range, range);
 	std::mt19937 mt(dev());
 
 	

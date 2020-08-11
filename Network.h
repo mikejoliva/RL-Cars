@@ -14,12 +14,12 @@ private:
 
 	Network() = delete;
 public:
-	Network(unsigned int, unsigned int);
+	Network(unsigned int, unsigned int, unsigned int, unsigned int);
 
 	~Network();
 
 	EDirection predictMove(std::array<int, 5>&);
-	void mutate(std::vector<Layer*>);
+	void mutate(std::vector<Layer*>&, float range);
 	void setupWeights();
 
 	std::vector<Layer*> getLayers();
