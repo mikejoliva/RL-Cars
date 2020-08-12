@@ -21,14 +21,8 @@ Car::Car(unsigned int id, TrackInfo& trackInfo, sf::Image& track, std::vector<st
 	// Let's set a texture for this car
 	assert(loadTexture() == EXIT_SUCCESS);
 
+	// Set the origin to the centre for rotation
 	sprite.setOrigin(sf::Vector2f(sprite.getTexture()->getSize().x * 0.5f, sprite.getTexture()->getSize().y * 0.5f));
-	// Set the origin to the new centre
-	/*
-	sprite.setOrigin({
-			(sprite.getTexture()->getSize().x * sprite.getScale().x) * 2,
-			(sprite.getTexture()->getSize().y * sprite.getScale().y) * 2
-		});
-		*/
 
 	previousBounds = sprite.getLocalBounds();
 
@@ -382,31 +376,6 @@ void Car::move(EDirection dir)
 
 	updateRect();
 
-	/*
-	if (dir == EDirection::FORWARD) {
-		const float angleRADS = (PI / 180) * (sprite.getRotation() + 270);
-		//Set x and y
-		const float x = MOVE_SPEED * cos(angleRADS);
-		const float y = MOVE_SPEED * sin(angleRADS);
-
-		sprite.move({ x, y });
-	}
-	else if (dir == EDirection::BACKWARD) {
-		const float angleRADS = (PI / 180) * (sprite.getRotation() + 270);
-		//Set x and y
-		const float x = MOVE_SPEED * cos(angleRADS);
-		const float y = MOVE_SPEED * sin(angleRADS);
-
-		sprite.move({ -x, -y });
-	}
-	else if (dir == EDirection::ROTATE_LEFT) {
-		sprite.rotate(-ROTATE_SPEED);
-	} 
-	else if (dir == EDirection::ROTATE_RIGHT) {
-		sprite.rotate(ROTATE_SPEED);
-	}
-	*/
-
 	if (dir == EDirection::FORWARD)
 	{
 		speed += MOVE_SPEED;
@@ -432,7 +401,7 @@ void Car::move(EDirection dir)
 	if (speed < 0.1f && speed > -0.1f)
 		return;
 
-	const float angleRADS = (PI / 180) * (sprite.getRotation() + 270);
+	const float angleRADS = (PI / 180.f) * (sprite.getRotation() + 270.f);
 	sprite.move({ speed * cos(angleRADS), speed * sin(angleRADS) });
 
 	// Check we haven't hit anything

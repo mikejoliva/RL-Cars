@@ -33,7 +33,7 @@ private:
 	bool dead = false;
 
 	const float MOVE_SPEED = .3f;
-	const float ROTATE_SPEED_RATIO = 1.5f;
+	const float ROTATE_SPEED_RATIO = 2.5f;
 	const float MAX_SPEED = MOVE_SPEED * 4.f;
 	float speed = 0.f;
 

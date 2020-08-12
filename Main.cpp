@@ -53,7 +53,7 @@ int main()
 
 
 	const size_t CAR_THREAD_COUNT = 3;
-	const size_t CARS_PER_THREAD = 30;
+	const size_t CARS_PER_THREAD = 100;
 
 	const int NETWORK_INPUT_COUNT = 5;
 	const int NETWORK_OUTPUT_COUNT = 4;
@@ -105,8 +105,6 @@ int main()
 	unsigned int bestScore = 0;
 	unsigned int generation = 0;
 	unsigned int alive = 0;
-	unsigned int previousScore = 0;
-	unsigned int scoreStreak = 0;
 
 	while (window.isOpen())
 	{
@@ -175,15 +173,11 @@ int main()
 			else
 			{
 				std::cout << "Best performing car was: " << bestCar->getID() << " (Score: " << bestScore  << ")" << std::endl;
-
-				previousScore == bestScore ? ++scoreStreak : scoreStreak = 0;
-				previousScore = bestScore;
-
 				std::vector<Layer*> bestLayers = bestCar->getNetwork()->getLayers();
 				for (std::vector<Car>::iterator car = cars.begin(); car != cars.end(); ++car)
 				{
 					if (*car != bestCar)
-						car->getNetwork()->mutate(bestLayers, .5f * (float)scoreStreak);
+						car->getNetwork()->mutate(bestLayers, .5f);
 					car->reset();
 				}
 			}
