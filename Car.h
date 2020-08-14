@@ -47,6 +47,9 @@ private:
 	sf::Time acc = sf::Time::Zero;
 	sf::Time ups = sf::seconds(1.f / 144.f);
 
+	sf::Clock start;
+	float timeAlive;
+
 	void setDead();
 
 	int loadTexture();
@@ -56,7 +59,7 @@ private:
 	void borderCollision();
 	void findLines();
 	inline bool lineIntersection(sf::Vector2f&, sf::Vector2f&, sf::Vector2f&, sf::Vector2f&);
-	inline sf::Vertex findLine(TrackInfo::RoadRGB&, sf::Image&, std::function<sf::Vector2<int>(const sf::FloatRect&, const sf::Transform&, int)>);
+	inline sf::Vertex findLine(TrackInfo::RGB&, sf::Image&, std::function<sf::Vector2<int>(const sf::FloatRect&, const sf::Transform&, int)>);
 	inline int getLength(sf::Vertex&, sf::Vertex&);
 
 	inline bool validColour(const sf::Color&);
@@ -65,6 +68,10 @@ private:
 	inline void updateRect();
 	void updatePoints();
 	void checkStuck();
+
+	void findMove();
+	void waypointCollision();
+	std::array<int, 5> getLineLengths();
 
 	inline bool withinTolerance(sf::Vector2f&, sf::Vector2f&, float tolerance);
 	inline bool withinToleranceOfSprite(sf::Vector2f&, float tolerance);
@@ -80,24 +87,23 @@ public:
 		Laps() : lap(0) { /* Empty */ };
 	} laps;
 
+	Car(unsigned int, TrackInfo&, sf::Image&, std::vector<std::vector<sf::Vertex>>&, Network*);
+	Car(const Car& c);
+
 	sf::Texture* texture = new sf::Texture();
 	sf::Sprite sprite;
 
-	std::array<int, 5> getLineLengths();
-
-	void findMove();
+	Network* getNetwork();
 
 	void run();
-
 	void reset();
-	void waypointCollision();
+
 	unsigned int getScore();
-	unsigned int getID() { return id; }
+	unsigned int getID();
+	bool isDead();
+	float getTimeAlive();
 
-	Network* getNetwork() { return network; }
-
-	bool isDead() { return dead; }
-	std::array<sf::Vertex[2], 5>& getLines() { return lines; }
+	std::array<sf::Vertex[2], 5>& getLines();
 
 	bool operator==(Car& rhs) { return id == rhs.id; }
 	bool operator==(const Car& rhs) const { return id == rhs.id; }
@@ -110,19 +116,6 @@ public:
 
 	bool operator!=(Car* rhs) { return !(*this == *rhs); }
 	bool operator!=(const Car* rhs) const { return !(*this == *rhs); }
-
-
-	Car(unsigned int,
-		TrackInfo&,
-		sf::Image&,
-		std::vector<std::vector<sf::Vertex>>&,
-		Network*
-	);
-
-	Car(const Car& c);
-
-	~Car();
-
 };
 
 #endif

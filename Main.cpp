@@ -2,7 +2,6 @@
 
 #include <string>
 #include <array>
-#include <algorithm>
 #include <thread>
 
 #include <SFML/Graphics.hpp>
@@ -19,7 +18,7 @@ int main()
 
 	// Setup the text writer
 	sf::Font font;
-	if (!font.loadFromFile("./font/open24.ttf"))
+	if (!font.loadFromFile("./font/OPen 24 Display St.ttf"))
 		return EXIT_FAILURE;
 	sf::Text text;
 	text.setFont(font); 
@@ -30,7 +29,7 @@ int main()
 	// Load the background track
 	sf::Texture trackTexture;
 	sf::Sprite track;
-	if (!trackTexture.loadFromFile("./tracks/track2.png"))
+	if (!trackTexture.loadFromFile("./tracks/track1.png"))
 		return EXIT_FAILURE;
 	track.setTexture(trackTexture);
 
@@ -39,7 +38,7 @@ int main()
 
 	// Load config info for the track
 	TrackInfo trackInfo;
-	if (trackInfo.loadTrackInfo("./tracks/track2.txt") != EXIT_SUCCESS)
+	if (trackInfo.loadTrackInfo("./tracks/track1.ini") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 
 	// Find our waypoints
@@ -53,7 +52,7 @@ int main()
 
 
 	const size_t CAR_THREAD_COUNT = 3;
-	const size_t CARS_PER_THREAD = 100;
+	const size_t CARS_PER_THREAD = 30;
 
 	const int NETWORK_INPUT_COUNT = 5;
 	const int NETWORK_OUTPUT_COUNT = 4;
@@ -138,10 +137,20 @@ int main()
 		// Draw the cars + lines
 		for (std::vector<Car>::iterator car = cars.begin(); car != cars.end(); ++car)
 		{
-			if (car->getScore() > bestScore)
+			if (car->getScore() >= bestScore)
 			{
-				bestScore = car->getScore();
-				bestCar = &(*car);
+				if (car->getScore() > bestScore)
+				{
+					bestScore = car->getScore();
+					bestCar = &(*car);
+				}
+
+				// The score is equal -> Get the faster car
+				if (car->getTimeAlive() < bestCar->getTimeAlive())
+				{
+					bestScore = car->getScore();
+					bestCar = &(*car);
+				}
 			}
 				
 			if (!car->isDead()) 
@@ -172,7 +181,11 @@ int main()
 			}
 			else
 			{
-				std::cout << "Best performing car was: " << bestCar->getID() << " (Score: " << bestScore  << ")" << std::endl;
+				std::cout << "Best performing car was: " << bestCar->getID() << " | Score: " << bestScore <<
+					" (Time alive: " << bestCar->getTimeAlive() << "s)" << std::endl;
+#ifdef DUMP_BEST
+				bestCar->getNetwork()->dump();
+#endif
 				std::vector<Layer*> bestLayers = bestCar->getNetwork()->getLayers();
 				for (std::vector<Car>::iterator car = cars.begin(); car != cars.end(); ++car)
 				{

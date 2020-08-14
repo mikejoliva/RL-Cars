@@ -79,8 +79,6 @@ void Network::mutate(std::vector<Layer*>& l, float range)
 	std::uniform_real_distribution<float> dist(-range, range);
 	std::mt19937 mt(dev());
 
-	
-
 	Layer* current = layers[0];
 	while (current->getNext() != nullptr)
 	{

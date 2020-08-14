@@ -25,7 +25,6 @@ Car::Car(unsigned int id, TrackInfo& trackInfo, sf::Image& track, std::vector<st
 	sprite.setOrigin(sf::Vector2f(sprite.getTexture()->getSize().x * 0.5f, sprite.getTexture()->getSize().y * 0.5f));
 
 	previousBounds = sprite.getLocalBounds();
-
 	previousPos = sprite.getPosition();
 
 	updatePoints();
@@ -52,6 +51,8 @@ void Car::reset()
 	laps.lap = 0;
 
 	moveCount = 0;
+
+	start.restart();
 
 	// Bring the car back to life
 	dead = false;
@@ -115,6 +116,31 @@ unsigned int Car::getScore()
 	return (laps.lap + 1) * (laps.waypointsPassed.size() + 1);
 }
 
+unsigned int Car::getID()
+{
+	return id;
+}
+
+Network* Car::getNetwork()
+{
+	return network;
+}
+
+bool Car::isDead()
+{
+	return dead;
+}
+
+float Car::getTimeAlive()
+{
+	return timeAlive;
+}
+
+std::array<sf::Vertex[2], 5>& Car::getLines()
+{
+	return lines;
+}
+
 Car::Car(const Car& c) :
 	network(c.network),
 	id(c.id),
@@ -124,11 +150,6 @@ Car::Car(const Car& c) :
 	texture(c.texture),
 	sprite(c.sprite)
 { /* Empty */ }
-
-Car::~Car()
-{
-
-}
 
 int Car::loadTexture()
 {
@@ -148,7 +169,7 @@ int Car::loadTexture()
 	return EXIT_SUCCESS;
 }
 
-inline sf::Vertex Car::findLine(TrackInfo::RoadRGB& roadColour, sf::Image& track,
+inline sf::Vertex Car::findLine(TrackInfo::RGB& roadColour, sf::Image& track,
 	std::function<sf::Vector2<int>(const sf::FloatRect&, const sf::Transform&, int)> update)
 {
 	const int MAX_MARCH = 1000;
@@ -185,8 +206,11 @@ inline int Car::getLength(sf::Vertex& a, sf::Vertex& b)
 void Car::setDead()
 {
 	// The car has crashed!
-	// Change it's state to dead
+	// Change state to dead
 	dead = true;
+
+	// Record time alive
+	timeAlive = start.getElapsedTime().asSeconds();
 
 	sf::Color current = sprite.getColor();
 	current.a = 100;
@@ -228,7 +252,7 @@ void Car::updatePoints()
 void Car::checkStuck()
 {
 	// This function combats cars spamming LEFT & RIGHT or FORWARDS & BACKWARDS
-	if (withinToleranceOfSprite(previousPos, MOVE_SPEED / 2.f))
+	if (withinToleranceOfSprite(previousPos, MOVE_SPEED * 2.f))
 		setDead();
 
 	// Check the car is making progress

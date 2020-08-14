@@ -7,23 +7,20 @@ class TrackInfo
 {
 private:
 	void floodFill(sf::Image&, std::vector<sf::Vector2<int>>&, sf::Vector2<int>);
+	void split(std::vector<std::string>&, std::string, char);
 	inline float getLength(sf::Vector2<int>&, sf::Vector2<int>&);
 public:
-	struct RoadRGB {
+	struct RGB {
 		int r, g, b;
+		void set(int red, int green, int blue)
+		{ 
+			r = red;
+			g = green;
+			b = blue;
+		}
 		inline bool operator==(const sf::Color& rhs) { return ((int)rhs.r == r && (int)rhs.g == g && (int)rhs.b == b); }
 		inline bool operator!=(const sf::Color& rhs) { return !(*this == rhs); }
-	} roadColour;
-	struct LineRGB {
-		int r, g, b;
-		inline bool operator==(const sf::Color& rhs) { return ((int)rhs.r == r && (int)rhs.g == g && (int)rhs.b == b); }
-		inline bool operator!=(const sf::Color& rhs) { return !(*this == rhs); }
-	} lineColour;
-	struct WaypointRGB {
-		int r, g, b;
-		inline bool operator==(const sf::Color& rhs) { return ((int)rhs.r == r && (int)rhs.g == g && (int)rhs.b == b); }
-		inline bool operator!=(const sf::Color& rhs) { return !(*this == rhs); }
-	} waypointColour;
+	} roadColour, lineColour, waypointColour;
 	struct Bounds {
 		sf::Vector2<int> top;
 		sf::Vector2<int> bottom;

@@ -1,6 +1,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <iostream>
+
 #include "TrackInfo.h"
 
 void TrackInfo::floodFill(sf::Image& track, std::vector<sf::Vector2<int>>& checked, sf::Vector2<int> point)
@@ -64,6 +66,15 @@ void TrackInfo::floodFill(sf::Image& track, std::vector<sf::Vector2<int>>& check
 		checked,
 		sf::Vector2<int>({ point.x, point.y - 1 })
 	);
+}
+
+void TrackInfo::split(std::vector<std::string>& v, std::string s, char c)
+{
+	std::stringstream ss(s);
+	std::string token;
+	while (std::getline(ss, token, c)) {
+		v.push_back(token);
+	}
 }
 
 inline float TrackInfo::getLength(sf::Vector2<int>& a, sf::Vector2<int>& b)
@@ -145,40 +156,58 @@ int TrackInfo::loadTrackInfo(std::string track)
 		return EXIT_FAILURE;
 
 	std::string line;
+	while (std::getline(infile, line))
+	{
+		if (line.find("=") == std::string::npos)
+		{
+			std::cout << "Invalid line format found: " << std::endl << line << std::endl;
+			return EXIT_FAILURE;
+		}
 
-	std::getline(infile, line);
-	posX = std::stof(line);
-	std::getline(infile, line);
-	posY = std::stof(line);
+		std::vector<std::string> tokens;
+		std::string value = line.substr(line.find("=") + 1, line.length() -1 );
+		split(tokens, value, ' ');
 
-	std::getline(infile, line);
-	scaleX = std::stof(line);
-	std::getline(infile, line);
-	scaleY = std::stof(line);
-
-	std::getline(infile, line);
-	rotation = std::stof(line);
-
-	std::getline(infile, line);
-	roadColour.r = std::stoi(line);
-	std::getline(infile, line);
-	roadColour.g = std::stoi(line);
-	std::getline(infile, line);
-	roadColour.b = std::stoi(line);
-
-	std::getline(infile, line);
-	lineColour.r = std::stoi(line);
-	std::getline(infile, line);
-	lineColour.g = std::stoi(line);
-	std::getline(infile, line);
-	lineColour.b = std::stoi(line);
-
-	std::getline(infile, line);
-	waypointColour.r = std::stoi(line);
-	std::getline(infile, line);
-	waypointColour.g = std::stoi(line);
-	std::getline(infile, line);
-	waypointColour.b = std::stoi(line);
+		std::string key = line.substr(0, line.find("="));
+		if (key == "Start")
+		{
+			posX = std::stof(tokens[0]);
+			posY = std::stof(tokens[1]);
+		}
+		else if (key == "Scale")
+		{
+			scaleX = std::stof(tokens[0]);
+			scaleY = std::stof(tokens[1]);
+		}
+		else if (key == "Rotation")
+		{
+			rotation = std::stof(tokens[0]);
+		}
+		else if (key == "RoadRGB")
+		{
+			roadColour.set(
+				std::stoi(tokens[0]),
+				std::stoi(tokens[1]),
+				std::stoi(tokens[2])
+			);
+		}
+		else if (key == "LineRGB")
+		{
+			lineColour.set(
+				std::stoi(tokens[0]),
+				std::stoi(tokens[1]),
+				std::stoi(tokens[2])
+			);
+		}
+		else if (key == "WaypointRGB")
+		{
+			waypointColour.set(
+				std::stoi(tokens[0]),
+				std::stoi(tokens[1]),
+				std::stoi(tokens[2])
+			);
+		}
+	}
 
 	infile.close();
 
