@@ -14,7 +14,7 @@
 int main()
 {
 	// Create the main window
-	sf::RenderWindow window(sf::VideoMode(1024, 768), "ML-Cars");
+	sf::RenderWindow window(sf::VideoMode(1024, 768), "RL-Cars");
 
 	// Setup the text writer
 	sf::Font font;
