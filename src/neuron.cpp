@@ -1,6 +1,6 @@
-#include "Neuron.h"
-
 #include <math.h>
+
+#include "neuron.hpp"
 
 inline float Neuron::activation()
 {
@@ -27,60 +27,60 @@ Neuron::~Neuron()
 	next.clear();
 }
 
-void Neuron::setNext(std::vector<Neuron*>& v, std::vector<float>& w)
+void Neuron::SetNext(std::vector<Neuron*>& v, std::vector<float>& w)
 {
 	next = v;
 	weights = w;
 }
 
-void Neuron::setPrev(std::vector<Neuron*>& v)
+void Neuron::SetPrev(std::vector<Neuron*>& v)
 {
 	prev = v;
 }
 
-void Neuron::addValue(float val)
+void Neuron::AddValue(float val)
 {
 	value += val;
 }
 
-void Neuron::setValue(float val)
+void Neuron::SetValue(float val)
 {
 	value = val;
 }
 
-float Neuron::getValue()
+float Neuron::GetValue()
 {
 	return activation() + bias;
 }
 
-std::vector<float>& Neuron::getWeights()
+std::vector<float>& Neuron::GetWeights()
 {
 	return weights;
 }
 
-void Neuron::setWeights(std::vector<float>& w)
+void Neuron::SetWeights(std::vector<float>& w)
 {
 	weights = w;
 }
 
-float Neuron::getBias()
+float Neuron::GetBias()
 {
 	return bias;
 }
 
-void Neuron::setBias(float b)
+void Neuron::SetBias(float b)
 {
 	bias = b;
 }
 
-void Neuron::updateBias(float b)
+void Neuron::UpdateBias(float b)
 {
 	bias += b;
 }
 
-void Neuron::propagate()
+void Neuron::Propagate()
 {
 	for (int idx = 0; idx < next.size(); ++idx)
-		next[idx]->addValue(getValue() * weights[idx]);
+		next[idx]->AddValue(GetValue() * weights[idx]);
 }
 

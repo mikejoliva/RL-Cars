@@ -1,6 +1,7 @@
-#include "Layer.h"
-
+#include <cstddef>
 #include <random>
+
+#include "layer.hpp"
 
 Layer::Layer(unsigned int s) :
 	prev(nullptr), next(nullptr)
@@ -36,43 +37,43 @@ Layer::~Layer()
 	neurons.clear();
 }
 
-void Layer::setNext(Layer* l)
+void Layer::SetNext(Layer* l)
 {
 	next = l;
 }
 
-void Layer::setPrev(Layer* l)
+void Layer::SetPrev(Layer* l)
 {
 	prev = l;
 }
 
-Layer* Layer::getNext()
+Layer* Layer::GetNext()
 {
 	return next;
 }
 
-Layer* Layer::getPrev()
+Layer* Layer::GetPrev()
 {
 	return prev;
 }
 
-void Layer::flush()
+void Layer::Flush()
 {
 	for (int idx = 0; idx < neurons.size(); ++idx)
-		neurons[idx]->setValue(0.f);
+		neurons[idx]->SetValue(0.f);
 }
 
-Neuron* Layer::getNeuron(size_t i)
+Neuron* Layer::GetNeuron(size_t i)
 {
 	return neurons[i];
 }
 
-std::vector<Neuron*>& Layer::getNeurons()
+std::vector<Neuron*>& Layer::GetNeurons()
 {
 	return neurons;
 }
 
-size_t Layer::getSize()
+size_t Layer::GetSize()
 {
 	return neurons.size();
 }

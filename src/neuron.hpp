@@ -22,21 +22,21 @@ public:
 	Neuron(const Neuron&);
 	~Neuron();
 
-	void setNext(std::vector<Neuron*>&, std::vector<float>&);
-	void setPrev(std::vector<Neuron*>&);
+	void SetNext(std::vector<Neuron*>&, std::vector<float>&);
+	void SetPrev(std::vector<Neuron*>&);
 
-	void addValue(float);
-	void setValue(float);
-	float getValue();
+	void AddValue(float);
+	void SetValue(float);
+	float GetValue();
 
-	std::vector<float>& getWeights();
-	void setWeights(std::vector<float>&);
+	std::vector<float>& GetWeights();
+	void SetWeights(std::vector<float>&);
 
-	float getBias();
-	void setBias(float);
-	void updateBias(float);
+	float GetBias();
+	void SetBias(float);
+	void UpdateBias(float);
 
-	void propagate();
+	void Propagate();
 };
 
 #endif

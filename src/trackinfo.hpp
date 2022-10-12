@@ -1,18 +1,20 @@
 #ifndef _TRACK_INFO_H
 #define _TRACK_INFO_H
 
+#include <climits>
+
 #include <SFML/Graphics.hpp>
 
 class TrackInfo
 {
 private:
-	void floodFill(sf::Image&, std::vector<sf::Vector2<int>>&, sf::Vector2<int>);
-	void split(std::vector<std::string>&, std::string, char);
-	inline float getLength(sf::Vector2<int>&, sf::Vector2<int>&);
+	void FloodFill(sf::Image&, std::vector<sf::Vector2<int>>&, sf::Vector2<int>);
+	void Split(std::vector<std::string>&, std::string, char);
+	inline float GetLength(sf::Vector2<int>&, sf::Vector2<int>&);
 public:
 	struct RGB {
 		int r, g, b;
-		void set(int red, int green, int blue)
+		void Set(int red, int green, int blue)
 		{ 
 			r = red;
 			g = green;
@@ -34,7 +36,7 @@ public:
 			right	= { 0,0 };
 		}
 		// Inclusive bounds check
-		inline bool contains(sf::Vector2<int> point)
+		inline bool Contains(sf::Vector2<int> point)
 		{
 			return (
 				point.y <= top.y && point.y >= bottom.y &&
@@ -50,8 +52,8 @@ public:
 	std::vector<std::vector<sf::Vertex>> waypoints;
 
 	// We need to find the bounding boxes for each of the waypoints on the track
-	std::vector<std::vector<sf::Vertex>> findWaypoints(sf::Image&);
-	int loadTrackInfo(std::string);
+	std::vector<std::vector<sf::Vertex>> FindWaypoints(sf::Image&);
+	int LoadTrackInfo(std::string);
 
 };
 

@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include "EDirection.h"
-#include "Layer.h"
+#include "direction.hpp"
+#include "layer.hpp"
 
 class Network
 {
@@ -18,13 +18,13 @@ public:
 
 	~Network();
 
-	EDirection predictMove(std::array<int, 5>&);
-	void mutate(std::vector<Layer*>&, float range);
-	void setupWeights();
+	Direction PredictMove(std::array<int, 5>&);
+	void Mutate(std::vector<Layer*>&, float range);
+	void SetupWeights();
 
-	std::vector<Layer*> getLayers();
+	std::vector<Layer*> GetLayers();
 
-	void dump();
+	void Dump();
 };
 
 #endif

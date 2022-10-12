@@ -1,11 +1,11 @@
 #include <fstream>
 #include <sstream>
-
 #include <iostream>
+#include <cmath>
 
-#include "TrackInfo.h"
+#include "trackinfo.hpp"
 
-void TrackInfo::floodFill(sf::Image& track, std::vector<sf::Vector2<int>>& checked, sf::Vector2<int> point)
+void TrackInfo::FloodFill(sf::Image& track, std::vector<sf::Vector2<int>>& checked, sf::Vector2<int> point)
 {
 	// Keep track of cells we have checked
 	int count = std::count_if(
@@ -43,32 +43,32 @@ void TrackInfo::floodFill(sf::Image& track, std::vector<sf::Vector2<int>>& check
 
 
 	// Let's look at the surrounding pixels
-	floodFill(
+	FloodFill(
 		track,
 		checked,
 		sf::Vector2<int>({ point.x + 1, point.y })
 	);
 
-	floodFill(
+	FloodFill(
 		track,
 		checked,
 		sf::Vector2<int>({ point.x - 1, point.y })
 	);
 
-	floodFill(
+	FloodFill(
 		track,
 		checked,
 		sf::Vector2<int>({ point.x, point.y + 1 })
 	);
 
-	floodFill(
+	FloodFill(
 		track,
 		checked,
 		sf::Vector2<int>({ point.x, point.y - 1 })
 	);
 }
 
-void TrackInfo::split(std::vector<std::string>& v, std::string s, char c)
+void TrackInfo::Split(std::vector<std::string>& v, std::string s, char c)
 {
 	std::stringstream ss(s);
 	std::string token;
@@ -77,7 +77,7 @@ void TrackInfo::split(std::vector<std::string>& v, std::string s, char c)
 	}
 }
 
-inline float TrackInfo::getLength(sf::Vector2<int>& a, sf::Vector2<int>& b)
+inline float TrackInfo::GetLength(sf::Vector2<int>& a, sf::Vector2<int>& b)
 {
 	return std::sqrt(
 		(b.x - a.x) * (b.x - a.x) +
@@ -86,7 +86,7 @@ inline float TrackInfo::getLength(sf::Vector2<int>& a, sf::Vector2<int>& b)
 }
 
 // We need to find the bounding boxes for each of the waypoints on the track
-std::vector<std::vector<sf::Vertex>> TrackInfo::findWaypoints(sf::Image& track)
+std::vector<std::vector<sf::Vertex>> TrackInfo::FindWaypoints(sf::Image& track)
 {
 	// Loop over each pixel in the track and find where the waypoints are
 	for (int x = 0; x < track.getSize().x; ++x)
@@ -98,7 +98,7 @@ std::vector<std::vector<sf::Vertex>> TrackInfo::findWaypoints(sf::Image& track)
 				// We found a waypoint - let's check it's new
 				bool found = false;
 				for (std::vector<TrackInfo::Bounds>::iterator b = bounds.begin(); b != bounds.end(); ++b)
-					if (b->contains({ x, y }))
+					if (b->Contains({ x, y }))
 						found = true;
 
 				if (!found)
@@ -111,7 +111,7 @@ std::vector<std::vector<sf::Vertex>> TrackInfo::findWaypoints(sf::Image& track)
 
 					std::vector<sf::Vector2<int>> checked;
 
-					floodFill(
+					FloodFill(
 						track,
 						checked,
 						{ x, y }
@@ -130,7 +130,7 @@ std::vector<std::vector<sf::Vertex>> TrackInfo::findWaypoints(sf::Image& track)
 					for (int outer = 0; outer < points.size(); ++outer)
 						for (int inner = points.size() - 1; inner > outer; --inner)
 						{
-							const float len = getLength(points[outer], points[inner]);
+							const float len = GetLength(points[outer], points[inner]);
 							if (largest < len) {
 								line[0] = sf::Vertex({ (float)points[outer].x, (float)points[outer].y });
 								line[1] = sf::Vertex({ (float)points[inner].x, (float)points[inner].y });
@@ -148,8 +148,7 @@ std::vector<std::vector<sf::Vertex>> TrackInfo::findWaypoints(sf::Image& track)
 	return waypoints;
 }
 
-//FIXME: Make an readable file format + parser
-int TrackInfo::loadTrackInfo(std::string track)
+int TrackInfo::LoadTrackInfo(std::string track)
 {
 	std::ifstream infile(track);
 	if (!infile.good())
@@ -166,7 +165,7 @@ int TrackInfo::loadTrackInfo(std::string track)
 
 		std::vector<std::string> tokens;
 		std::string value = line.substr(line.find("=") + 1, line.length() -1 );
-		split(tokens, value, ' ');
+		Split(tokens, value, ' ');
 
 		std::string key = line.substr(0, line.find("="));
 		if (key == "Start")
@@ -185,7 +184,7 @@ int TrackInfo::loadTrackInfo(std::string track)
 		}
 		else if (key == "RoadRGB")
 		{
-			roadColour.set(
+			roadColour.Set(
 				std::stoi(tokens[0]),
 				std::stoi(tokens[1]),
 				std::stoi(tokens[2])
@@ -193,7 +192,7 @@ int TrackInfo::loadTrackInfo(std::string track)
 		}
 		else if (key == "LineRGB")
 		{
-			lineColour.set(
+			lineColour.Set(
 				std::stoi(tokens[0]),
 				std::stoi(tokens[1]),
 				std::stoi(tokens[2])
@@ -201,7 +200,7 @@ int TrackInfo::loadTrackInfo(std::string track)
 		}
 		else if (key == "WaypointRGB")
 		{
-			waypointColour.set(
+			waypointColour.Set(
 				std::stoi(tokens[0]),
 				std::stoi(tokens[1]),
 				std::stoi(tokens[2])

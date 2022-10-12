@@ -1,9 +1,10 @@
 #ifndef _LAYER_H
 #define _LAYER_H
 
+#include <cstddef>
 #include <vector>
 
-#include "Neuron.h"
+#include "neuron.hpp"
 
 class Layer
 {
@@ -20,18 +21,18 @@ public:
 
 	~Layer();
 	
-	void setNext(Layer*);
-	void setPrev(Layer*);
+	void SetNext(Layer*);
+	void SetPrev(Layer*);
 
-	Layer* getNext();
-	Layer* getPrev();
+	Layer* GetNext();
+	Layer* GetPrev();
 
-	void flush();
+	void Flush();
 
-	Neuron* getNeuron(size_t);
-	std::vector<Neuron*>& getNeurons();
+	Neuron* GetNeuron(size_t);
+	std::vector<Neuron*>& GetNeurons();
 	
-	size_t getSize();
+	size_t GetSize();
 };
 
 #endif

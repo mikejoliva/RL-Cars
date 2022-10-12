@@ -4,22 +4,23 @@
 #include <assert.h>
 #include <random>
 #include <stdlib.h>
+#include <cstddef>
+#include <cmath>
 
 #include <SFML/Graphics.hpp>
 
-#include "Car.h"
+#include "car.hpp"
+#include "trackinfo.hpp"
 
-#define PI (float)3.14159
-
-Car::Car(unsigned int id, TrackInfo& trackInfo, sf::Image& track, std::vector<std::vector<sf::Vertex>>& waypoints, Network* network)
-	: id(id), trackInfo(trackInfo), track(track), waypoints(waypoints), network(network)
+Car::Car(Configuration* config, unsigned int id, TrackInfo& trackInfo, sf::Image& track, std::vector<std::vector<sf::Vertex>>& waypoints, Network* network)
+	: config(config), id(id), trackInfo(trackInfo), track(track), waypoints(waypoints), network(network)
 {
 	sprite.setPosition(trackInfo.posX, trackInfo.posY);
 	sprite.setScale(trackInfo.scaleX, trackInfo.scaleY);
 	sprite.setRotation(trackInfo.rotation);
 
 	// Let's set a texture for this car
-	assert(loadTexture() == EXIT_SUCCESS);
+	assert(LoadTexture() == EXIT_SUCCESS);
 
 	// Set the origin to the centre for rotation
 	sprite.setOrigin(sf::Vector2f(sprite.getTexture()->getSize().x * 0.5f, sprite.getTexture()->getSize().y * 0.5f));
@@ -27,20 +28,41 @@ Car::Car(unsigned int id, TrackInfo& trackInfo, sf::Image& track, std::vector<st
 	previousBounds = sprite.getLocalBounds();
 	previousPos = sprite.getPosition();
 
-	updatePoints();
-	findLines();
+	LoadSpeed();
+
+	UpdatePoints();
+	FindLines();
 }
 
-void Car::reset()
+Car::Car(const Car& c) : config(c.config), trackInfo(c.trackInfo), track(c.track)
+{ 
+	network = c.network;
+	id = c.id;
+	waypoints = c.waypoints;
+	trackInfo = c.trackInfo;
+	track = c.track;
+	texture = c.texture;
+	sprite = c.sprite;
+	LoadSpeed();
+}
+
+void Car::LoadSpeed()
+{
+	moveSpeed = config->GetCarMoveSpeed();
+	rotateSpeedRatio = config->GetCarRotateSpeed();
+	maxSpeed = moveSpeed * config->GetCarMaxSpeedMultiplier();
+}
+
+void Car::Reset()
 {
 	sprite.setPosition(trackInfo.posX, trackInfo.posY);
 	sprite.setRotation(trackInfo.rotation);
 
 	previousPos = sprite.getPosition();
 
-	updateRect();
-	updatePoints();
-	findLines();
+	UpdateRect();
+	UpdatePoints();
+	FindLines();
 
 	// Revert Alpha
 	sf::Color current = sprite.getColor();
@@ -58,13 +80,13 @@ void Car::reset()
 	dead = false;
 }
 
-void Car::waypointCollision()
+void Car::WaypointCollision()
 {	
 	// Check if we have advanced a lap
 	if (laps.waypointsPassed.size() == waypoints.size())
 	{
 		// We have passed all waypoints - check we have crossed the finish line
-		advanceLap();
+		AdvanceLap();
 		return;
 	}
 
@@ -85,25 +107,25 @@ void Car::waypointCollision()
 			continue;
 
 		// Top
-		if (lineIntersection(waypoint->at(0).position, waypoint->at(1).position, points[0], points[2]))
+		if (LineIntersection(waypoint->at(0).position, waypoint->at(1).position, points[0], points[2]))
 		{
 			laps.waypointsPassed.push_back(*waypoint);
 			break;
 		}
 		// Left
-		if (lineIntersection(waypoint->at(0).position, waypoint->at(1).position, points[0], points[3]))
+		if (LineIntersection(waypoint->at(0).position, waypoint->at(1).position, points[0], points[3]))
 		{
 			laps.waypointsPassed.push_back(*waypoint);
 			break;
 		}
 		// Right
-		if (lineIntersection(waypoint->at(0).position, waypoint->at(1).position, points[2], points[5]))
+		if (LineIntersection(waypoint->at(0).position, waypoint->at(1).position, points[2], points[5]))
 		{
 			laps.waypointsPassed.push_back(*waypoint);
 			break;
 		}
 		// Bottom
-		if (lineIntersection(waypoint->at(0).position, waypoint->at(1).position, points[3], points[5]))
+		if (LineIntersection(waypoint->at(0).position, waypoint->at(1).position, points[3], points[5]))
 		{
 			laps.waypointsPassed.push_back(*waypoint);
 			break;
@@ -111,47 +133,42 @@ void Car::waypointCollision()
 	}
 }
 
-unsigned int Car::getScore()
+sf::Sprite Car::GetSprite()
+{
+	return sprite;
+}
+
+unsigned int Car::GetScore()
 {
 	return (laps.lap + 1) * (laps.waypointsPassed.size() + 1);
 }
 
-unsigned int Car::getID()
+unsigned int Car::GetID()
 {
 	return id;
 }
 
-Network* Car::getNetwork()
+Network* Car::GetNetwork()
 {
 	return network;
 }
 
-bool Car::isDead()
+bool Car::IsDead()
 {
 	return dead;
 }
 
-float Car::getTimeAlive()
+float Car::GetTimeAlive()
 {
 	return timeAlive;
 }
 
-std::array<sf::Vertex[2], 5>& Car::getLines()
+std::array<sf::Vertex[2], 5>& Car::GetLines()
 {
 	return lines;
 }
 
-Car::Car(const Car& c) :
-	network(c.network),
-	id(c.id),
-	waypoints(c.waypoints),
-	trackInfo(c.trackInfo),
-	track(c.track),
-	texture(c.texture),
-	sprite(c.sprite)
-{ /* Empty */ }
-
-int Car::loadTexture()
+int Car::LoadTexture()
 {
 	std::vector<std::string> images;
 	for (auto& file : std::filesystem::directory_iterator("./images"))
@@ -161,6 +178,7 @@ int Car::loadTexture()
 	std::uniform_int_distribution<int> dist(0, images.size() - 1);
 	std::mt19937 mt(dev());
 
+	texture = new sf::Texture();
 	if (!texture->loadFromFile(images[dist(mt)]))
 		return EXIT_FAILURE;
 
@@ -169,7 +187,7 @@ int Car::loadTexture()
 	return EXIT_SUCCESS;
 }
 
-inline sf::Vertex Car::findLine(TrackInfo::RGB& roadColour, sf::Image& track,
+inline sf::Vertex Car::FindLine(TrackInfo::RGB& roadColour, sf::Image& track,
 	std::function<sf::Vector2<int>(const sf::FloatRect&, const sf::Transform&, int)> update)
 {
 	const int MAX_MARCH = 1000;
@@ -183,19 +201,20 @@ inline sf::Vertex Car::findLine(TrackInfo::RGB& roadColour, sf::Image& track,
 		if (march >= MAX_MARCH)
 			break;
 		// Get less accurate the larger march is
-		if (march >= ACCURACY_THRESHOLD) march *= 1.5;
+		if (march >= ACCURACY_THRESHOLD)
+			march *= 1.5;
 		else ++march;
 		// Check bounds
 		if (point.x < 0) point.x = 0;
 		if (point.x >= track.getSize().x) point.x = track.getSize().x - 1;
 		if (point.y < 0) point.y = 0;
 		if (point.y >= track.getSize().y) point.y = track.getSize().y - 1;
-	} while (validColour(track.getPixel(point.x, point.y)));
+	} while (ValidColour(track.getPixel(point.x, point.y)));
 
 	return sf::Vertex({ (float)point.x, (float)point.y });
 }
 
-inline int Car::getLength(sf::Vertex& a, sf::Vertex& b)
+inline int Car::GetLength(sf::Vertex& a, sf::Vertex& b)
 {
 	return std::sqrt(
 		(b.position.x - a.position.x) * (b.position.x - a.position.x) +
@@ -203,7 +222,7 @@ inline int Car::getLength(sf::Vertex& a, sf::Vertex& b)
 	);
 }
 
-void Car::setDead()
+void Car::SetDead()
 {
 	// The car has crashed!
 	// Change state to dead
@@ -217,18 +236,18 @@ void Car::setDead()
 	sprite.setColor(current);
 }
 
-inline bool Car::validColour(const sf::Color& pixel)
+inline bool Car::ValidColour(const sf::Color& pixel)
 {
 	return trackInfo.roadColour == pixel || trackInfo.lineColour == pixel || trackInfo.waypointColour == pixel;
 }
 
-inline void Car::updateRect()
+inline void Car::UpdateRect()
 {
 	rect = sprite.getLocalBounds();
 	trans = sprite.getTransform();
 }
 
-void Car::updatePoints()
+void Car::UpdatePoints()
 {
 	// Find the points to detect collision
 	// To speed this up we will only look at each vertex
@@ -249,39 +268,39 @@ void Car::updatePoints()
 	points[7] = trans * sf::Vector2f({ rect.left + rect.width, (rect.top + rect.height) / 2 });
 }
 
-void Car::checkStuck()
+void Car::CheckStuck()
 {
 	// This function combats cars spamming LEFT & RIGHT or FORWARDS & BACKWARDS
-	if (withinToleranceOfSprite(previousPos, MOVE_SPEED * 2.f))
-		setDead();
+	//if (WithinToleranceOfSprite(previousPos, moveSpeed * 2.f))
+		//SetDead();
 
 	// Check the car is making progress
 	if (moveCount >= 1000)
 	{
 		moveCount = 0;
 
-		if (getScore() == lastScore)
-			setDead();
-		else
-			lastScore = getScore();
+		if (GetScore() == lastScore)
+			SetDead();
+
+		lastScore = GetScore();
 	}
 		
 	previousPos = sprite.getPosition();
 }
 
-inline bool Car::withinTolerance(sf::Vector2f& v1, sf::Vector2f& v2, float tolerance)
+inline bool Car::WithinTolerance(sf::Vector2f& v1, sf::Vector2f& v2, float tolerance)
 {
 	sf::Vector2f res = v2 - v1;
 	return (abs(res.x) < tolerance && abs(res.y) < tolerance);
 }
 
-inline bool Car::withinToleranceOfSprite(sf::Vector2f& v1, float tolerance)
+inline bool Car::WithinToleranceOfSprite(sf::Vector2f& v1, float tolerance)
 {
 	sf::Vector2f res = sprite.getPosition() - v1;
 	return (abs(res.x) < tolerance && abs(res.y) < tolerance);
 }
 
-void Car::findLines()
+void Car::FindLines()
 {
 
 	// Check if the car has moved, no need to re-compute if not
@@ -289,7 +308,7 @@ void Car::findLines()
 		return;
 
 	lines[0][0] = sf::Vertex({ trans * sf::Vector2f({ (rect.left + rect.width) / 2.f, rect.top }) });
-	lines[0][1] = findLine(
+	lines[0][1] = FindLine(
 		trackInfo.roadColour,
 		track,
 		[](const sf::FloatRect& rect, const sf::Transform& trans, int march) -> sf::Vector2<int> {
@@ -299,7 +318,7 @@ void Car::findLines()
 
 
 	lines[1][0] = sf::Vertex({ trans * sf::Vector2f({ rect.left + rect.width, rect.top }) });
-	lines[1][1] = findLine(
+	lines[1][1] = FindLine(
 		trackInfo.roadColour,
 		track,
 		[](const sf::FloatRect& rect, const sf::Transform& trans, int march) -> sf::Vector2<int> {
@@ -308,7 +327,7 @@ void Car::findLines()
 	);
 
 	lines[2][0] = sf::Vertex({ trans * sf::Vector2f({ rect.left, rect.top }) });
-	lines[2][1] = findLine(
+	lines[2][1] = FindLine(
 		trackInfo.roadColour,
 		track,
 		[](const sf::FloatRect& rect, const sf::Transform& trans, int march) -> sf::Vector2<int> {
@@ -317,7 +336,7 @@ void Car::findLines()
 	);
 
 	lines[3][0] = sf::Vertex({ trans * sf::Vector2f({ rect.left, (rect.top + rect.height) / 2 }) });
-	lines[3][1] = findLine(
+	lines[3][1] = FindLine(
 		trackInfo.roadColour,
 		track,
 		[](const sf::FloatRect& rect, const sf::Transform& trans, int march) -> sf::Vector2<int> {
@@ -326,7 +345,7 @@ void Car::findLines()
 	);
 
 	lines[4][0] = sf::Vertex({ trans * sf::Vector2f({ rect.left + rect.width, (rect.top + rect.height) / 2.f }) });
-	lines[4][1] = findLine(
+	lines[4][1] = FindLine(
 		trackInfo.roadColour,
 		track,
 		[](const sf::FloatRect& rect, const sf::Transform& trans, int march) -> sf::Vector2<int> {
@@ -335,26 +354,26 @@ void Car::findLines()
 	);
 }
 
-std::array<int, 5> Car::getLineLengths()
+std::array<int, 5> Car::GetLineLengths()
 {
 	return std::array<int, 5>({
-			getLength(lines[0][0], lines[0][1]),
-			getLength(lines[1][0], lines[1][1]),
-			getLength(lines[2][0], lines[2][1]),
-			getLength(lines[3][0], lines[3][1]),
-			getLength(lines[4][0], lines[4][1]),
+			GetLength(lines[0][0], lines[0][1]),
+			GetLength(lines[1][0], lines[1][1]),
+			GetLength(lines[2][0], lines[2][1]),
+			GetLength(lines[3][0], lines[3][1]),
+			GetLength(lines[4][0], lines[4][1]),
 		});
 }
 
-void Car::borderCollision()
+void Car::BorderCollision()
 {
 	// Check for colour collision on each point
 	for (int idx = 0; idx < 8; ++idx)
 	{
 		const sf::Color pixel = track.getPixel(points[idx].x, points[idx].y);
-		if (!validColour(pixel))
+		if (!ValidColour(pixel))
 		{
-			setDead();
+			SetDead();
 			break;
 		}
 	}
@@ -362,7 +381,7 @@ void Car::borderCollision()
 
 // p1 & p2 are the two points that define line A
 // p3 & p4 are the two points that define line B
-inline bool Car::lineIntersection(sf::Vector2f& p1, sf::Vector2f& p2, sf::Vector2f& p3, sf::Vector2f& p4)
+inline bool Car::LineIntersection(sf::Vector2f& p1, sf::Vector2f& p2, sf::Vector2f& p3, sf::Vector2f& p4)
 {
 	const float denominator = ((p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y));
 	const float a = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) / denominator;
@@ -371,7 +390,7 @@ inline bool Car::lineIntersection(sf::Vector2f& p1, sf::Vector2f& p2, sf::Vector
 	return (a >= 0 && a <= 1 && b >= 0 && b <= 1);
 }
 
-void Car::advanceLap()
+void Car::AdvanceLap()
 {
 	if (laps.waypointsPassed.size() != waypoints.size())
 		return;
@@ -393,65 +412,65 @@ void Car::advanceLap()
 
 
 
-void Car::move(EDirection dir)
+void Car::Move(Direction dir)
 {
 	if (dead)
 		return;
 
-	updateRect();
+	UpdateRect();
 
-	if (dir == EDirection::FORWARD)
+	if (dir == Direction::FORWARD)
 	{
-		speed += MOVE_SPEED;
-		if (speed > MAX_SPEED)
-			speed = MAX_SPEED;
+		speed += moveSpeed;
+		if (speed > maxSpeed)
+			speed = maxSpeed;
 	}
-	else if (dir == EDirection::BACKWARD)
+	else if (dir == Direction::BACKWARD)
 	{
-		speed -= MOVE_SPEED;
-		if (speed < -MAX_SPEED)
-			speed = -MAX_SPEED;
+		speed -= moveSpeed;
+		if (speed < -maxSpeed)
+			speed = -maxSpeed;
 	}
-	else if (dir == EDirection::ROTATE_LEFT)
+	else if (dir == Direction::ROTATE_LEFT)
 	{
-		sprite.rotate(-speed * ROTATE_SPEED_RATIO);
+		sprite.rotate(-speed * rotateSpeedRatio);
 	}
-	else if (dir == EDirection::ROTATE_RIGHT)
+	else if (dir == Direction::ROTATE_RIGHT)
 	{
-		sprite.rotate(speed * ROTATE_SPEED_RATIO);
+		sprite.rotate(speed * rotateSpeedRatio);
 	}
 		
 
 	if (speed < 0.1f && speed > -0.1f)
 		return;
 
-	const float angleRADS = (PI / 180.f) * (sprite.getRotation() + 270.f);
-	sprite.move({ speed * cos(angleRADS), speed * sin(angleRADS) });
+	const float angleRADS = (pi / 180.f) * (sprite.getRotation() + 270.f);
+	sprite.move({ static_cast<float>(speed * cos(angleRADS)), static_cast<float>(speed * sin(angleRADS)) });
 
 	// Check we haven't hit anything
-	updatePoints();
+	UpdatePoints();
 
-	findLines();
-	borderCollision();
-	waypointCollision();
+	FindLines();
+	BorderCollision();
+	WaypointCollision();
 }
 
-void Car::findMove()
+void Car::FindMove()
 {
-	std::array<int, 5> lines = getLineLengths();
-	move(network->predictMove(lines));
+	std::array<int, 5> lines = GetLineLengths();
+	Move(network->PredictMove(lines));
 
 	if (++moveCount % 100 == 0)
-		checkStuck();
+		CheckStuck();
 }
 
-void Car::run()
+void Car::Run()
 {
 	while (acc > ups)
 	{
 		acc -= ups;
 		if (!dead)
-			findMove();
+			FindMove();
 	}
 	acc += clock.restart();
 }
