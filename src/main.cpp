@@ -1,9 +1,9 @@
+#include <memory>
+
 #include "engine.hpp"
 
 int main()
 {
-	Engine* engine = new Engine();
+	std::unique_ptr<Engine> engine = std::make_unique<Engine>();
 	engine->Run();
-
-	delete engine;
 }

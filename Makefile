@@ -7,7 +7,7 @@ compile:
 	mv *.o ./build/objects
 	cp ./tracks/* ./build/tracks
 	cp ./font/* ./build/font
-	cp ./images/* ./build/images
+	cp ./images/car* ./build/images
 	cp setup.config ./build
 	g++ ./build/objects/*.o -o ./build/rl-cars -lsfml-graphics -lsfml-window -lsfml-system
 

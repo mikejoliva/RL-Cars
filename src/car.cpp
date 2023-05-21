@@ -172,7 +172,8 @@ int Car::LoadTexture()
 {
 	std::vector<std::string> images;
 	for (auto& file : std::filesystem::directory_iterator("./images"))
-		images.push_back((file.path().string()));
+		if(!is_directory(file.path()))
+			images.push_back((file.path().string()));
 
 	std::random_device dev;
 	std::uniform_int_distribution<int> dist(0, images.size() - 1);
